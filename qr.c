@@ -128,6 +128,7 @@ void householder(mat m, mat *R, mat *Q)
     mat q[m.m];
     mat z = m, z1;
     for (int k = 0; k < m.n && k < m.m - 1; k++) {
+        printf("Loop %d\r\n", k);
         double e[m.m], x[m.m], a;
         z1 = matrix_minor(z, k);
         z = z1;
@@ -145,10 +146,12 @@ void householder(mat m, mat *R, mat *Q)
         z1 = matrix_mul(q[k], z);
         z = z1;
     }
+    printf("finished\r\n");
     matrix_delete(z);
     *Q = q[0];
     *R = matrix_mul(q[0], m);
     for (int i = 1; i < m.n && i < m.m - 1; i++) {
+        printf("Loop %d\r\n", i);
         z1 = matrix_mul(q[i], *Q);
         if (i > 1) matrix_delete(*Q);
         *Q = z1;

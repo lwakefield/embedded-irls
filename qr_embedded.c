@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#include "platform.h"
+/*#include "platform.h"*/
 
 typedef struct {
     int m, n;
@@ -156,16 +156,20 @@ void householder_vector(double *beta, double *v, int n)
 		} else {
 			v[0] = -sigma / (x_0 + mu);
 		}
-		*beta = (2 * (v[0] * v[0])) / (sigma + v[0] * v[0]);
+        *beta = (2 * (v[0] * v[0])) / (sigma + v[0] * v[0]);
 		for (i = n-1; i > -1; i--) {
 			v[i] = v[i] / v[0];
 		}
 	}
 }
 
+void back_accumulate(mat m)
+{
+
+}
+
 void householder(mat m, mat *R, mat *Q)
 {
-	printf("starting householder \r\n");
     mat z1;
     int i, j, k;
     for (k = 0; k < m.n && k < m.m - 1; k++) {
@@ -173,21 +177,21 @@ void householder(mat m, mat *R, mat *Q)
         z1 = matrix_minor(m, k);
 //        matrix_show(z1);
 
-        double *beta;
+        double beta;
         int n = z1.m;
         double v[n];
         mcol(z1, v, k);
-        householder_vector(beta, v, n);
-        printf("beta: %e\r\n", *beta);
-        printf("%e\r\n", v[0]);
-        printf("%e\r\n", v[1]);
-        printf("%e\r\n", v[2]);
-        printf("%e\r\n", v[3]);
+        householder_vector(&beta, v, n);
+        /*printf("beta: %e\r\n", *beta);*/
+        /*printf("%e\r\n", v[0]);*/
+        /*printf("%e\r\n", v[1]);*/
+        /*printf("%e\r\n", v[2]);*/
+        /*printf("%e\r\n", v[3]);*/
 
         mat beta_v_vt = matrix_new(n,n);
         for (i = 0; i < n; i++) {
         	for (j = 0; j < n; j++) {
-        		beta_v_vt.v[i][j] = *beta * v[i] * v[j];
+        		beta_v_vt.v[i][j] = beta * v[i] * v[j];
         	}
         }
         mat update = matrix_mul(beta_v_vt, z1);
@@ -196,14 +200,14 @@ void householder(mat m, mat *R, mat *Q)
 				m.v[i][j] = z1.v[i-k][j-k] - update.v[i-k][j-k];
 			}
         }
+        matrix_show(m);
         for (i = k+1; i < m.m; i++) {
-        	m.v[i][k] = v[i+1];
+        	m.v[i][k] = v[i];
         }
         matrix_delete(update);
         matrix_delete(beta_v_vt);
         matrix_delete(z1);
     }
-    matrix_show(m);
 //    matrix_delete(z);
 }
 
@@ -219,7 +223,7 @@ double in[][3] = {
 
 int main()
 {
-    init_platform();
+    /*init_platform();*/
 //    int n = 402;
 //    int p = 120;
 
@@ -229,17 +233,7 @@ int main()
     mat x = matrix_copy(n, p, in);
     printf("Got a new matrix\r\n");
     householder(x, &R, &Q);
-
-//    printf("Start householder\r\n");
-//    double v[] = {12, 6, -4, -1, 2};
-//    double *beta = 0;
-//    householder_vector(beta, v, 5);
-//    printf("Beta: %e\r\n", *beta);
-//    printf("%e ", v[0]);
-//    printf("%e ", v[1]);
-//    printf("%e ", v[2]);
-//    printf("%e ", v[3]);
-//    printf("%e ", v[4]);
+    matrix_show(x);
 
 //    puts("Q"); matrix_show(Q);
 //    puts("R"); matrix_show(R);
@@ -249,9 +243,9 @@ int main()
 //    puts("Q * R"); matrix_show(m);
     puts("Done.\r\n");
 
-//    matrix_delete(x);
-//    matrix_delete(R);
-//    matrix_delete(Q);
+    matrix_delete(x);
+    /*matrix_delete(R);*/
+    /*matrix_delete(Q);*/
 //    matrix_delete(m);
     return 0;
 }
