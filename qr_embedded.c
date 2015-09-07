@@ -211,8 +211,10 @@ void householder(mat m, mat *R, mat *Q)
 				m.v[i][j] = z1.v[i][j] - update.v[i][j];
 			}
         }
-        for (i = k+1; i < m.m; i++) {
-        	m.v[i][k] = v[i];
+        /*Save the householder vectors*/
+        vec_show(v, n-k);
+        for (i = 1; i < n - k; i++) {
+        	m.v[i + k][k] = v[i];
         }
         matrix_delete(update);
         matrix_delete(beta_v_vt);
