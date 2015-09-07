@@ -190,9 +190,6 @@ void householder(mat m, mat *R, mat *Q)
     	printf("%d loop\r\n", k);
         z1 = matrix_minor(m, k);
 
-        /*matrix_show(m);*/
-        /*matrix_show(z1);*/
-
         double beta;
         int n = z1.m;
         double v[n-k];
@@ -211,8 +208,8 @@ void householder(mat m, mat *R, mat *Q)
 				m.v[i][j] = z1.v[i][j] - update.v[i][j];
 			}
         }
+
         /*Save the householder vectors*/
-        vec_show(v, n-k);
         for (i = 1; i < n - k; i++) {
         	m.v[i + k][k] = v[i];
         }
