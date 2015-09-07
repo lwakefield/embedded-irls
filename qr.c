@@ -130,7 +130,6 @@ void householder(mat m, mat *R, mat *Q)
     for (int k = 0; k < m.n && k < m.m - 1; k++) {
         double e[m.m], x[m.m], a;
         z1 = matrix_minor(z, k);
-        /*if (&z != &m) matrix_delete(z);*/
         z = z1;
  
         mcol(z, x, k);
@@ -144,7 +143,6 @@ void householder(mat m, mat *R, mat *Q)
         vdiv(e, vnorm(e, m.m), e, m.m);
         q[k] = vmul(e, m.m);
         z1 = matrix_mul(q[k], z);
-        /*if (&z != &m) matrix_delete(z);*/
         z = z1;
     }
     matrix_delete(z);
