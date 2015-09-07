@@ -163,30 +163,28 @@ void householder(mat m, mat *R, mat *Q)
     matrix_transpose(*Q);
 }
  
-double in[][3] = {
-    { 12, -51,   4},
-    {  6, 167, -68},
-    { -4,  24, -41},
-    { -1, 1, 0},
-    { 2, 0, 3},
-};
+
+#include "test_data.h"
  
 int main()
 {
+    int n = 402;
+    int p = 120;
     mat R, Q;
-    mat x = matrix_copy(5, 3, in);
+    mat x = matrix_copy(n, p, in);
     householder(x, &R, &Q);
  
-    puts("Q"); matrix_show(Q);
-    puts("R"); matrix_show(R);
+    /*puts("Q"); matrix_show(Q);*/
+    /*puts("R"); matrix_show(R);*/
  
     // to show their product is the input matrix
-    mat m = matrix_mul(Q, R);
-    puts("Q * R"); matrix_show(m);
+    /*mat m = matrix_mul(Q, R);*/
+    /*puts("Q * R"); matrix_show(m);*/
+    puts("Done");
  
     matrix_delete(x);
     matrix_delete(R);
     matrix_delete(Q);
-    matrix_delete(m);
+    /*matrix_delete(m);*/
     return 0;
 }
