@@ -5,3 +5,5 @@ qr_test:
 	g++ -O -I ./eigen qr_test.cpp -o oqr_test
 	g++ -O2 -I ./eigen qr_test.cpp -o o2qr_test
 	g++ -O3 -I ./eigen qr_test.cpp -o o3qr_test
+arm:
+	arm-linux-gnueabi-g++ -O3 -pg -static -mfpu=neon -I eigen/ qr_test.cpp -o arm_qr_test
