@@ -4,7 +4,13 @@
 using namespace std;
 using namespace Eigen;
 
-
+float madsigma(VectorXf residuals, int rank)
+{
+    float sigma = 1.4826;
+    sort(residuals.data(), residuals.data()+rank);
+    float median = residuals(residuals.size() / 2);
+    return median * sigma;
+}
 
 void irls(MatrixXf x, VectorXf y)
 {
@@ -36,7 +42,9 @@ void irls(MatrixXf x, VectorXf y)
 
         r = y - x * b;
         r_adj = (r.array() * adj_factor.array()) / curr_weights.array();
-        new_weights = madsigma(r_adj, wxrank);
+        float s = madsigma(r_adj, wxrank);
+
+        //VectorXf weights = tukey_biweight();
     }
 }
 
@@ -50,6 +58,7 @@ int main()
     start = std::clock();
     irls(a, b);
     end = std::clock();
+
 
     cout << "Took: " << (end - start) / (double)(CLOCKS_PER_SEC / 1000) << "ms\n" << endl;
 }
