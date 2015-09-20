@@ -12,6 +12,18 @@ float madsigma(VectorXf residuals, int rank)
     return median * sigma;
 }
 
+VectorXf tukey_biweight(VectorXf residuals)
+{
+    VectorXf abs_weights = residuals.array().abs();
+    VectorXf weights = residuals;
+    for (int i = 0; i < weights.size(); i++) {
+        if (abs_weights(i) > 1) {
+            weights(i) = 0;
+        }
+    }
+    return (1 - weights.array().square()).square();
+}
+
 void irls(MatrixXf x, VectorXf y)
 {
     int n = x.rows();
@@ -44,13 +56,21 @@ void irls(MatrixXf x, VectorXf y)
         r_adj = (r.array() * adj_factor.array()) / curr_weights.array();
         float s = madsigma(r_adj, wxrank);
 
-        //VectorXf weights = tukey_biweight();
+        float tune = 4.685;
+        VectorXf weights = tukey_biweight(r_adj.array() / (s * tune));
+        b0 = b;
+        weights = weights.array().sqrt();
+        VectorXf y_weighted = y.array() * weights.array();
+        MatrixXf x_weighted = x.array() * (weights * VectorXf::Ones(p).transpose()).array();
+        qr = x_weighted.colPivHouseholderQr();
+        wxrank = qr.rank();
+        b = qr.solve(y_weighted);
     }
 }
 
 int main()
 {
-    MatrixXf a = MatrixXf::Random(302,120);
+    MatrixXf a = MatrixXf::Random(302, 120);
     VectorXf b = VectorXf::Random(302);
 
     std::clock_t start, end;
