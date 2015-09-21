@@ -6,10 +6,12 @@ using namespace Eigen;
 
 float madsigma(VectorXf residuals, int rank)
 {
-    float sigma = 1.4826;
-    sort(residuals.data(), residuals.data()+rank);
-    float median = residuals(residuals.size() / 2);
-    return median * sigma;
+    float sigma = 0.6745;
+    residuals = residuals.array().abs();
+    sort(residuals.data(), residuals.data()+residuals.size());
+    int middle = (rank - 1 + residuals.size()) / 2;
+    float median = residuals(middle);
+    return median / sigma;
 }
 
 VectorXf tukey_biweight(VectorXf residuals)
@@ -37,20 +39,36 @@ void irls(MatrixXf x, VectorXf y)
     VectorXf b = qr.solve(y);
     VectorXf b0;
 
-    MatrixXf r = qr.matrixR();
-    MatrixXf e = x.array() / r.array();
-    //float h = (e.array() * e.array()).rowwise().sum().minCoeff();
-    VectorXf adj_factor = 100 * VectorXf::Ones(n);
-    cout << "E" << endl;
-    cout << e << endl << endl;
-    cout << "R" << endl;
-    cout << r << endl << endl;
+    MatrixXf r = qr.matrixR().triangularView<Upper>();
+    // B/A = (A'\B')'
+    MatrixXf e =  r.transpose().colPivHouseholderQr().
+        solve((x * qr.colsPermutation()).transpose()).
+        transpose();
+    VectorXf h = (e.array().square()).rowwise().sum();
+    VectorXf adj_factor = 1 / (1 - h.array() / prior_weights.array()).sqrt();
 
+    //cout << "E" << endl;
+    //cout << e << endl << endl;
+
+    //cout << "h" << endl;
+    //cout << h << endl << endl;
+
+    //cout << "adj_factor" << endl;
+    //cout << adj_factor << endl << endl;
+
+    //cout << "R" << endl;
+    //cout << r << endl << endl;
+
+    //cout << "permute" << endl;
+    //cout <<  x * qr.colsPermutation() << endl << endl;
+
+    //cout << "x" << endl;
+    //cout << x << endl << endl;
     
     int wxrank = qr.rank();
     float D = 1.4901e-08;
 
-    int iter_limit = 50;
+    int iter_limit = 7;
     VectorXf res, r_adj;
     for (int i = 0; i < iter_limit; i++) {
         if (b0.size()) {
@@ -58,8 +76,11 @@ void irls(MatrixXf x, VectorXf y)
         }
 
         res = y - x * b;
+        //cout << res << endl << endl;
         r_adj = (res.array() * adj_factor.array()) / curr_weights.array();
+        //cout << r_adj << endl << endl;
         float s = madsigma(r_adj, wxrank);
+        cout << s << endl << endl;
 
         float tune = 4.685;
         VectorXf weights = tukey_biweight(r_adj.array() / (s * tune));
