@@ -1,5 +1,9 @@
 #include <ctime>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
 #include <Eigen/Dense>
 using namespace std;
 using namespace Eigen;
@@ -68,7 +72,7 @@ void irls(MatrixXf x, VectorXf y)
     int wxrank = qr.rank();
     float D = 1.4901e-08;
 
-    int iter_limit = 7;
+    int iter_limit = 50;
     VectorXf res, r_adj;
     for (int i = 0; i < iter_limit; i++) {
         if (b0.size()) {
@@ -76,11 +80,8 @@ void irls(MatrixXf x, VectorXf y)
         }
 
         res = y - x * b;
-        //cout << res << endl << endl;
         r_adj = (res.array() * adj_factor.array()) / curr_weights.array();
-        //cout << r_adj << endl << endl;
         float s = madsigma(r_adj, wxrank);
-        cout << s << endl << endl;
 
         float tune = 4.685;
         VectorXf weights = tukey_biweight(r_adj.array() / (s * tune));
@@ -92,33 +93,54 @@ void irls(MatrixXf x, VectorXf y)
         wxrank = qr.rank();
         b = qr.solve(y_weighted);
     }
-    cout << b << endl;
+    //cout << b << endl;
 }
 
 int main()
 {
-    //MatrixXf a = MatrixXf::Random(302, 120);
-    //VectorXf b = VectorXf::Random(302);
+    MatrixXf a = MatrixXf::Random(402, 120);
+    VectorXf b = VectorXf::Random(402);
+
+    //MatrixXf a = MatrixXf::Zero(402, 120);
+    string line;
+    ifstream f2 ("data/F2_real.csv");
+    int i = 0;
+    while ( getline (f2, line) )
+    {
+        int j = 0;
+        stringstream ss(line);
+        string token;
+        float c;
+        while ( getline (ss, token, ',') ) {
+            c = ::stof(token);
+            //cout << c << endl;
+            a(i, j) = c;
+            j++;
+        }
+        i++;
+    }
+    cout << a << endl << endl;
+    f2.close();
+
     
-    MatrixXf a(5,3);
-    a << 7,     1,    10,
-        2,     1,     1,
-        8,     9,     5,
-        1,     7,     4,
-        3,     4,     8;
-    VectorXf b(5);
-    b << 2,
-     3,
-     9,
-     3,
-     9;
+    //MatrixXf a(5,3);
+    //a << 7,     1,    10,
+        //2,     1,     1,
+        //8,     9,     5,
+        //1,     7,     4,
+        //3,     4,     8;
+    //VectorXf b(5);
+    //b << 2,
+     //3,
+     //9,
+     //3,
+     //9;
 
     /*
        Looking for something like:
-       1.3285
-       0.1326
-       0.5602
-       0.1517
+       0.1596
+       0.6537
+       0.2618
        */
 
     std::clock_t start, end;
