@@ -37,23 +37,28 @@ void irls(MatrixXf x, VectorXf y)
     VectorXf b = qr.solve(y);
     VectorXf b0;
 
-    //MatrixXf r = qr.matrixQR().triangularView<Upper>();
-    //MatrixXf e = x.array() / r.array();
+    MatrixXf r = qr.matrixR();
+    MatrixXf e = x.array() / r.array();
     //float h = (e.array() * e.array()).rowwise().sum().minCoeff();
     VectorXf adj_factor = 100 * VectorXf::Ones(n);
+    cout << "E" << endl;
+    cout << e << endl << endl;
+    cout << "R" << endl;
+    cout << r << endl << endl;
+
     
     int wxrank = qr.rank();
     float D = 1.4901e-08;
 
     int iter_limit = 50;
-    VectorXf r, r_adj;
+    VectorXf res, r_adj;
     for (int i = 0; i < iter_limit; i++) {
         if (b0.size()) {
             // test threshhold
         }
 
-        r = y - x * b;
-        r_adj = (r.array() * adj_factor.array()) / curr_weights.array();
+        res = y - x * b;
+        r_adj = (res.array() * adj_factor.array()) / curr_weights.array();
         float s = madsigma(r_adj, wxrank);
 
         float tune = 4.685;
@@ -66,12 +71,34 @@ void irls(MatrixXf x, VectorXf y)
         wxrank = qr.rank();
         b = qr.solve(y_weighted);
     }
+    cout << b << endl;
 }
 
 int main()
 {
-    MatrixXf a = MatrixXf::Random(302, 120);
-    VectorXf b = VectorXf::Random(302);
+    //MatrixXf a = MatrixXf::Random(302, 120);
+    //VectorXf b = VectorXf::Random(302);
+    
+    MatrixXf a(5,3);
+    a << 7,     1,    10,
+        2,     1,     1,
+        8,     9,     5,
+        1,     7,     4,
+        3,     4,     8;
+    VectorXf b(5);
+    b << 2,
+     3,
+     9,
+     3,
+     9;
+
+    /*
+       Looking for something like:
+       1.3285
+       0.1326
+       0.5602
+       0.1517
+       */
 
     std::clock_t start, end;
 
