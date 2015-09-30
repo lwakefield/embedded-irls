@@ -30,7 +30,7 @@ VectorXf tukey_biweight(VectorXf residuals)
     return (1 - weights.array().square()).square();
 }
 
-void irls(MatrixXf x, VectorXf y)
+VectorXf irls(MatrixXf x, VectorXf y)
 {
     int n = x.rows();
     int p = x.cols();
@@ -94,16 +94,14 @@ void irls(MatrixXf x, VectorXf y)
         b = qr.solve(y_weighted);
     }
     //cout << b << endl;
+    return b;
 }
 
-int main()
+MatrixXf loadMatrix(string file_name, int m, int n)
 {
-    MatrixXf a = MatrixXf::Random(402, 120);
-    VectorXf b = VectorXf::Random(402);
-
-    //MatrixXf a = MatrixXf::Zero(402, 120);
+    MatrixXf a = MatrixXf::Zero(m, n);
     string line;
-    ifstream f2 ("data/F2_real.csv");
+    ifstream f2 (file_name);
     int i = 0;
     while ( getline (f2, line) )
     {
@@ -113,42 +111,44 @@ int main()
         float c;
         while ( getline (ss, token, ',') ) {
             c = ::stof(token);
-            //cout << c << endl;
             a(i, j) = c;
             j++;
         }
         i++;
     }
-    cout << a << endl << endl;
     f2.close();
+    return a;
+}
 
+VectorXf loadVector(string file_name, int m)
+{
+    VectorXf b = VectorXf::Zero(m);
+    string line;
+    ifstream f2 (file_name);
+    int i = 0;
+    while ( getline (f2, line) )
+    {
+        float c = ::stof(line);
+        b(i) = c;
+        i++;
+    }
+    f2.close();
+    return b;
+
+}
+
+int main()
+{
+
+    MatrixXf a = loadMatrix("data/F2_real.csv", 402, 120);
+    VectorXf y = loadVector("data/y_real.csv", 402);
     
-    //MatrixXf a(5,3);
-    //a << 7,     1,    10,
-        //2,     1,     1,
-        //8,     9,     5,
-        //1,     7,     4,
-        //3,     4,     8;
-    //VectorXf b(5);
-    //b << 2,
-     //3,
-     //9,
-     //3,
-     //9;
-
-    /*
-       Looking for something like:
-       0.1596
-       0.6537
-       0.2618
-       */
-
     std::clock_t start, end;
-
     start = std::clock();
-    irls(a, b);
+    VectorXf b = irls(a, y);
     end = std::clock();
 
+    cout << a * b << endl;
 
     cout << "Took: " << (end - start) / (double)(CLOCKS_PER_SEC / 1000) << "ms\n" << endl;
 }
