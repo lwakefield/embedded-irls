@@ -134,22 +134,82 @@ VectorXf loadVector(string file_name, int m)
     }
     f2.close();
     return b;
-
 }
 
-int main()
+MatrixXcf loadComplexMatrix(string file_name, int m, int n)
+{
+    MatrixXcf b = MatrixXcf::Zero(m, n);
+    string line;
+    ifstream f2 (file_name);
+    int i = 0;
+    while ( getline (f2, line) )
+    {
+        int j = 0;
+        stringstream ss(line);
+        string token;
+        float c;
+        while ( getline (ss, token, ' ') ) {
+            c = ::stof(token);
+            if (j % 2 == 0) {
+                b.real()(i, j/2) = c;
+            } else {
+                b.imag()(i, j/2) = c;
+            }
+            j++;
+        }
+        i++;
+    }
+    f2.close();
+    return b;
+}
+
+VectorXcf loadComplexVector(string file_name, int m)
+{
+    VectorXcf b = VectorXcf::Zero(m);
+    string line;
+    ifstream f2 (file_name);
+    int i = 0;
+    while ( getline (f2, line) )
+    {
+        int j = 0;
+        stringstream ss(line);
+        string token;
+        float c;
+        while ( getline (ss, token, ' ') ) {
+            c = ::stof(token);
+            if (j == 0) {
+                b.real()(i) = c;
+            } else {
+                b.imag()(i) = c;
+            }
+            j++;
+        }
+        i++;
+    }
+    f2.close();
+    return b;
+}
+
+int _main()
 {
 
     MatrixXf a = loadMatrix("data/F2_real.csv", 402, 120);
     VectorXf y = loadVector("data/y_real.csv", 402);
+
+    ofstream a_test ("data/a_test");
+    a_test << a;
+    ofstream y_test ("data/y_test");
+    y_test << y;
     
     std::clock_t start, end;
     start = std::clock();
     VectorXf b = irls(a, y);
     end = std::clock();
-
-    cout << a * b << endl;
+    ofstream b_test ("data/b_test");
+    b_test << b;
 
     cout << "Took: " << (end - start) / (double)(CLOCKS_PER_SEC / 1000) << "ms\n" << endl;
+
+    return 0;
 }
 

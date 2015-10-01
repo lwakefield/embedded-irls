@@ -1,4 +1,4 @@
-.PHONY: qr_test qr_test.cpp irls
+.PHONY: qr_test qr_test.cpp irls reconstruct
 
 qr_test:
 	g++ -O3 -I ./eigen qr_test.cpp -o qr_test
@@ -10,3 +10,6 @@ arm:
 irls:
 	g++ -O3 -I ./eigen irls.cpp -o irls
 	./irls
+reconstruct:
+	g++ -O3 -I ./eigen reconstruct.cpp -o reconstruct
+	./reconstruct
