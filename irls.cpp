@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <Eigen/Dense>
+#include <stdlib.h>
 using namespace std;
 using namespace Eigen;
 
@@ -78,50 +79,11 @@ VectorXcf irls(MatrixXcf x, VectorXcf y)
     return b;
 }
 
-MatrixXcf loadMatrix(string file_name, int m, int n)
-{
-    MatrixXcf a = MatrixXcf::Zero(m, n);
-    string line;
-    ifstream f2 (file_name);
-    int i = 0;
-    while ( getline (f2, line) )
-    {
-        int j = 0;
-        stringstream ss(line);
-        string token;
-        float c;
-        while ( getline (ss, token, ',') ) {
-            c = ::stof(token);
-            a(i, j) = c;
-            j++;
-        }
-        i++;
-    }
-    f2.close();
-    return a;
-}
-
-VectorXcf loadVector(string file_name, int m)
-{
-    VectorXcf b = VectorXcf::Zero(m);
-    string line;
-    ifstream f2 (file_name);
-    int i = 0;
-    while ( getline (f2, line) )
-    {
-        float c = ::stof(line);
-        b(i) = c;
-        i++;
-    }
-    f2.close();
-    return b;
-}
-
 MatrixXcf loadComplexMatrix(string file_name, int m, int n)
 {
     MatrixXcf b = MatrixXcf::Zero(m, n);
     string line;
-    ifstream f2 (file_name);
+    ifstream f2(file_name.c_str());
     int i = 0;
     while ( getline (f2, line) )
     {
@@ -130,7 +92,7 @@ MatrixXcf loadComplexMatrix(string file_name, int m, int n)
         string token;
         float c;
         while ( getline (ss, token, ' ') ) {
-            c = ::stof(token);
+            c = strtof(token.c_str(), NULL);
             if (j % 2 == 0) {
                 b.real()(i, j/2) = c;
             } else {
@@ -148,7 +110,7 @@ VectorXcf loadComplexVector(string file_name, int m)
 {
     VectorXcf b = VectorXcf::Zero(m);
     string line;
-    ifstream f2 (file_name);
+    ifstream f2(file_name.c_str());
     int i = 0;
     while ( getline (f2, line) )
     {
@@ -157,7 +119,7 @@ VectorXcf loadComplexVector(string file_name, int m)
         string token;
         float c;
         while ( getline (ss, token, ' ') ) {
-            c = ::stof(token);
+            c = strtof(token.c_str(), NULL);
             if (j == 0) {
                 b.real()(i) = c;
             } else {

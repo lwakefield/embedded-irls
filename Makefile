@@ -11,5 +11,5 @@ irls:
 	g++ -O3 -I ./eigen irls.cpp -o irls
 	./irls
 reconstruct:
-	g++ -O3 -I ./eigen reconstruct.cpp -o reconstruct
+	g++ -Werror -O3 -I ./eigen reconstruct.cpp -o reconstruct
 	./reconstruct
