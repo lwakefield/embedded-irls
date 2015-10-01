@@ -10,30 +10,6 @@ using namespace Eigen;
 
 #include "irls.cpp"
 
-VectorXcf extractKnown(VectorXcf spectrum, VectorXcf valid_points)
-{
-    ArrayXf a = valid_points.real().array();
-    VectorXcf extracted = VectorXcf::Zero((a > 0).count());
-
-    int j = 0;
-    for (int i = 0; i < a.rows(); i++) {
-        if (a(i)) {
-            extracted(j) = spectrum(j);
-            j++;
-        }
-    }
-    return extracted;
-}
-
-VectorXcf buildZeroedPoints(int left_cursor, int right_cursor, int size)
-{
-    VectorXcf left = VectorXcf::Ones(left_cursor);
-    VectorXcf middle = VectorXcf::Zero(size - left_cursor - right_cursor);
-    VectorXcf right = VectorXcf::Ones(right_cursor);
-    VectorXcf joined;
-    joined << left, middle, right;
-    return joined;
-}
 
 int getInvalidStart(VectorXcf valid_points)
 {
@@ -55,7 +31,22 @@ int getInvalidEnd(VectorXcf valid_points)
     return -1;
 }
 
-void reconstruct(VectorXcf spectrum, VectorXcf valid_points)
+VectorXcf extractKnown(VectorXcf spectrum, VectorXcf valid_points)
+{
+    ArrayXf a = valid_points.real().array();
+    VectorXcf extracted = VectorXcf::Zero((a > 0).count());
+
+    int j = 0;
+    for (int i = 0; i < a.rows(); i++) {
+        if (a(i) > 0) {
+            extracted(j) = spectrum(i);
+            j++;
+        }
+    }
+    return extracted;
+}
+
+VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
 {
     VectorXcf hamming_320 = loadComplexVector("data/hamming_320.dat", 320);
     VectorXcf invalid_points = VectorXcf::Ones(320).array() - valid_points.array();
@@ -73,11 +64,11 @@ void reconstruct(VectorXcf spectrum, VectorXcf valid_points)
     MatrixXcf idft = loadComplexMatrix("data/idft.dat", 320, 320);
     VectorXcf spectrum_windowed = spectrum.array() * hamming_320.array();
     VectorXcf known = extractKnown(spectrum_windowed, valid_points);
+    VectorXcf unknown;
 
-    //while (!stop_left || !stop_right || last_run) {
-        //VectorXcf zeroed = buildZeroedPoints(left_cursor, right_cursor, 320);
-        //VectorXcf non_zeroed = VectorXcf::Ones(320).array() - zeroed.array();
+    while (!stop_left || !stop_right || last_run) {
 
+        //printf("[left_cursor, right_cursor]: [%d, %d]\n", left_cursor, right_cursor);
 
         MatrixXcf F1_1 = idft.topLeftCorner(left_cursor, invalid_start);
         MatrixXcf F1_2 = idft.topRightCorner(left_cursor, idft.cols() - invalid_end - 1);
@@ -87,33 +78,64 @@ void reconstruct(VectorXcf spectrum, VectorXcf valid_points)
         F1 << F1_1, F1_2,
            F1_3, F1_4;
 
-        MatrixXcf F2_1 = idft.block(0, invalid_start, left_cursor, invalid_end - invalid_start);
-        MatrixXcf F2_2 = idft.block(right_cursor, invalid_start, idft.rows() - right_cursor, invalid_end - invalid_start);
+        MatrixXcf F2_1 = idft.block(0, invalid_start, left_cursor, invalid_end - invalid_start + 1);
+        MatrixXcf F2_2 = idft.block(right_cursor, invalid_start, idft.rows() - right_cursor, invalid_end - invalid_start + 1);
         MatrixXcf F2(F2_1.rows() + F2_2.rows(), F2_1.cols());
         F2 << F2_1,
            F2_2;
 
         MatrixXcf F3_1 = idft.block(left_cursor, 0, right_cursor - left_cursor, invalid_start);
-        MatrixXcf F3_2 = idft.block(left_cursor, invalid_start, right_cursor - left_cursor, idft.cols() - invalid_end);
+        MatrixXcf F3_2 = idft.block(left_cursor, invalid_start, right_cursor - left_cursor, idft.cols() - invalid_end - 1);
         MatrixXcf F3(F3_1.rows(), F3_1.cols() + F3_2.cols());
         F3 << F3_1, F3_2;
 
-        MatrixXcf F4 = idft.block(left_cursor, invalid_start, right_cursor - left_cursor, invalid_end - invalid_start);
+        MatrixXcf F4 = idft.block(left_cursor, invalid_start, right_cursor - left_cursor, invalid_end - invalid_start + 1);
+
+        //printf("F1: %dx%d\n", (int)F1.rows(), (int)F1.cols());
+        //printf("F2: %dx%d\n", (int)F2.rows(), (int)F2.cols());
+        //printf("F3: %dx%d\n", (int)F3.rows(), (int)F3.cols());
+        //printf("F4: %dx%d\n", (int)F4.rows(), (int)F4.cols());
 
         VectorXcf y = -F1 * known;
 
-        VectorXcf unknown = irls(F2, y);
+        unknown = irls(F2, y);
 
+        MatrixXcf zeroed_points = (F1 * known) + (F2 * unknown);
+        MatrixXcf nonzeroed_points = (F3 * known) + (F4 * unknown);
 
-        //printf("F1_1: %d,%d %dx%d\n", 0, 0, (int)F1_1.rows(), (int)F1_1.cols());
-        //printf("F1_2: %d,%d %dx%d\n", 0, 0, (int)F1_2.rows(), (int)F1_2.cols());
-        //printf("F1_3: %d,%d %dx%d\n", 0, 0, (int)F1_3.rows(), (int)F1_3.cols());
-        //printf("F1_4: %d,%d %dx%d\n", 0, 0, (int)F1_4.rows(), (int)F1_4.cols());
-    //}
+        float zeroed_max = zeroed_points.array().abs().maxCoeff();
+        float nonzeroed_max = nonzeroed_points.array().abs().maxCoeff();
+        float threshold = stop_threshold * (zeroed_max > nonzeroed_max ? zeroed_max : nonzeroed_max);
 
+        last_run = false;
+        if (!stop_left) {
+            ArrayXf top_rows = zeroed_points.topRows(left_cursor).array().abs();
+            if ((top_rows > threshold).any()) {
+                stop_left = true;
+                left_cursor--;
+            } else {
+                left_cursor++;
+            }
+            last_run = true;
+        }
+        if (!stop_right) {
+            ArrayXf bottom_rows = zeroed_points.bottomRows(idft.rows() - right_cursor).array().abs();
+            if ((bottom_rows > threshold).any()) {
+                stop_right = true;
+                right_cursor++;
+            } else {
+                right_cursor--;
+            }
+            last_run = true;
+        }
+    }
 
-
-    //cout << spectrum_windowed << endl;
+    VectorXcf spectrum_recovered(known.rows() + unknown.rows());
+    spectrum_recovered << known.head(invalid_start),
+                       unknown,
+                       known.tail(spectrum.rows() - invalid_end - 1);
+    VectorXcf spectrum_recovered_unwindowed = spectrum_recovered.array() / hamming_320.array();
+    return spectrum_recovered_unwindowed;
 }
 
 int main()
@@ -122,7 +144,13 @@ int main()
     VectorXcf spectrum = loadComplexVector("data/freq_resp.dat", 320);
     VectorXcf valid_points = loadComplexVector("data/valid_points.dat", 320);
 
-    reconstruct(spectrum, valid_points);
+    ofstream test_in("data/test_in.dat");
+    test_in << spectrum.array() * valid_points.array();
+
+    VectorXcf recovered = reconstruct(spectrum, valid_points);
+
+    ofstream test_out("data/test_out.dat");
+    test_out << recovered;
 
     cout << "done" << endl;
 }

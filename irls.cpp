@@ -49,24 +49,6 @@ VectorXcf irls(MatrixXcf x, VectorXcf y)
         transpose();
     VectorXcf h = (e.array().square()).rowwise().sum();
     VectorXcf adj_factor = 1 / (1 - h.array() / prior_weights.array()).sqrt();
-
-    //cout << "E" << endl;
-    //cout << e << endl << endl;
-
-    //cout << "h" << endl;
-    //cout << h << endl << endl;
-
-    //cout << "adj_factor" << endl;
-    //cout << adj_factor << endl << endl;
-
-    //cout << "R" << endl;
-    //cout << r << endl << endl;
-
-    //cout << "permute" << endl;
-    //cout <<  x * qr.colsPermutation() << endl << endl;
-
-    //cout << "x" << endl;
-    //cout << x << endl << endl;
     
     int wxrank = qr.rank();
     float D = 1.4901e-08;
