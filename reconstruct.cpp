@@ -68,7 +68,7 @@ VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
 
     while (!stop_left || !stop_right || last_run) {
 
-        //printf("[left_cursor, right_cursor]: [%d, %d]\n", left_cursor, right_cursor);
+        printf("[left_cursor, right_cursor]: [%d, %d]\n", left_cursor, right_cursor);
 
         MatrixXcf F1_1 = idft.topLeftCorner(left_cursor, invalid_start);
         MatrixXcf F1_2 = idft.topRightCorner(left_cursor, idft.cols() - invalid_end - 1);
@@ -140,14 +140,19 @@ VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
 
 int main()
 {
-    cout << "hello world from reconstruct" << endl;
+    cout << "Beginning reconstruction" << endl;
     VectorXcf spectrum = loadComplexVector("data/freq_resp.dat", 320);
     VectorXcf valid_points = loadComplexVector("data/valid_points.dat", 320);
 
     ofstream test_in("data/test_in.dat");
     test_in << spectrum.array() * valid_points.array();
 
+
+    std::clock_t start, end;
+    start = std::clock();
     VectorXcf recovered = reconstruct(spectrum, valid_points);
+    end = std::clock();
+    cout << "Took: " << (end - start) / (double)(CLOCKS_PER_SEC / 1000) << "ms\n" << endl;
 
     ofstream test_out("data/test_out.dat");
     test_out << recovered;
