@@ -13,3 +13,5 @@ irls:
 reconstruct:
 	g++ -Werror -O3 -I ./eigen reconstruct.cpp -o reconstruct
 	./reconstruct
+reconstruct-arm:
+	arm-linux-gnueabihf-g++ -Werror -O3 -pg -static -mfpu=neon -mfloat-abi=hard -I eigen/ reconstruct.cpp -o arm_reconstruct
