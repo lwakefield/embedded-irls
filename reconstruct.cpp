@@ -70,13 +70,11 @@ VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
 
         printf("[left_cursor, right_cursor]: [%d, %d]\n", left_cursor, right_cursor);
 
-        MatrixXcf F1_1 = idft.topLeftCorner(left_cursor, invalid_start);
-        MatrixXcf F1_2 = idft.topRightCorner(left_cursor, idft.cols() - invalid_end - 1);
-        MatrixXcf F1_3 = idft.bottomLeftCorner(idft.rows() - right_cursor, invalid_start);
-        MatrixXcf F1_4 = idft.bottomRightCorner(idft.rows() - right_cursor, idft.cols() - invalid_end - 1);
-        MatrixXcf F1(F1_1.rows() + F1_3.rows(), F1_1.cols() + F1_2.cols());
-        F1 << F1_1, F1_2,
-           F1_3, F1_4;
+        MatrixXcf F1(left_cursor + idft.rows() - right_cursor, invalid_start + idft.cols() - invalid_end - 1);
+        F1.topLeftCorner(left_cursor, invalid_start) = idft.topLeftCorner(left_cursor, invalid_start);
+        F1.topRightCorner(left_cursor, idft.cols() - invalid_end - 1) = idft.topRightCorner(left_cursor, idft.cols() - invalid_end - 1);
+        F1.bottomLeftCorner(idft.rows() - right_cursor, invalid_start) = idft.bottomLeftCorner(idft.rows() - right_cursor, invalid_start);
+        F1.bottomRightCorner(idft.rows() - right_cursor, idft.cols() - invalid_end - 1) = idft.bottomRightCorner(idft.rows() - right_cursor, idft.cols() - invalid_end - 1);
 
         MatrixXcf F2_1 = idft.block(0, invalid_start, left_cursor, invalid_end - invalid_start + 1);
         MatrixXcf F2_2 = idft.block(right_cursor, invalid_start, idft.rows() - right_cursor, invalid_end - invalid_start + 1);
@@ -100,12 +98,20 @@ VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
 
         unknown = irls(F2, y);
 
-        MatrixXcf zeroed_points = (F1 * known) + (F2 * unknown);
-        MatrixXcf nonzeroed_points = (F3 * known) + (F4 * unknown);
+        VectorXcf zeroed_points = (F1 * known) + (F2 * unknown);
+        VectorXcf nonzeroed_points = (F3 * known) + (F4 * unknown);
 
         float zeroed_max = zeroed_points.array().abs().maxCoeff();
         float nonzeroed_max = nonzeroed_points.array().abs().maxCoeff();
         float threshold = stop_threshold * (zeroed_max > nonzeroed_max ? zeroed_max : nonzeroed_max);
+        //cout << "threshold: " << threshold << endl;
+        //cout << iter_ir_soln.array().abs() << endl;
+
+        VectorXcf iter_ir_soln(zeroed_points.rows() + nonzeroed_points.rows());
+        iter_ir_soln << zeroed_points.head(left_cursor),
+                  nonzeroed_points,
+                  zeroed_points.tail(idft.rows() - right_cursor);
+        ArrayXf abs_iter_ir_soln = iter_ir_soln.array().abs();
 
         last_run = false;
         if (!stop_left) {
@@ -114,7 +120,14 @@ VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
                 stop_left = true;
                 left_cursor--;
             } else {
-                left_cursor++;
+                int quick_search = -1;
+                for (int i = 0; i < abs_iter_ir_soln.rows(); i++) {
+                    if (abs_iter_ir_soln(i) > threshold) {
+                        quick_search = i;
+                        break;
+                    }
+                }
+                left_cursor = (quick_search > left_cursor+1) ? quick_search : left_cursor + 1;
             }
             last_run = true;
         }
@@ -124,7 +137,14 @@ VectorXcf reconstruct(VectorXcf spectrum, VectorXcf valid_points)
                 stop_right = true;
                 right_cursor++;
             } else {
-                right_cursor--;
+                int quick_search = -1;
+                for (int i = abs_iter_ir_soln.rows() - 1; i > 0; i--) {
+                    if (abs_iter_ir_soln(i) > threshold) {
+                        quick_search = i;
+                        break;
+                    }
+                }
+                right_cursor = (quick_search != -1 && quick_search < right_cursor) ? quick_search : right_cursor - 1;
             }
             last_run = true;
         }
